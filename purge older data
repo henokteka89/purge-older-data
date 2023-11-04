@@ -1,0 +1,24 @@
+SET NOCOUNT ON;
+
+DECLARE @retention INT = 2, --every 48 hours 
+        @batchSize INT = 1000, -- Set your desired batch size
+        @destination_table VARCHAR(500) = 'WhoIsActive',
+        @destination_database sysname = 'admin',
+        @schema VARCHAR(MAX),
+        @SQL NVARCHAR(4000),
+        @parameters NVARCHAR(500),
+        @exists BIT;
+
+SET @destination_table = @destination_database + '.dbo.' + @destination_table;
+
+DECLARE @rowsAffected INT = @batchSize;
+
+WHILE @rowsAffected >= @batchSize
+BEGIN
+    -- Delete data in batches
+    SET @SQL = 'DELETE TOP (' + CAST(@batchSize AS VARCHAR(10)) + ') FROM ' + @destination_table + ' WHERE collection_time < DATEADD(day, -' + CAST(@retention AS VARCHAR(10)) + ', GETDATE());';
+    EXEC ( @SQL );
+
+    -- Get the number of rows affected by the previous batch
+    SET @rowsAffected = @@ROWCOUNT;
+END
